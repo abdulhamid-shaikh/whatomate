@@ -56,6 +56,7 @@ const allNavItems = [
     roles: ['admin', 'manager'],
     children: [
       { name: 'Overview', path: '/chatbot', icon: Bot },
+      { name: 'Settings', path: '/chatbot/settings', icon: Settings },
       { name: 'Keywords', path: '/chatbot/keywords', icon: Key },
       { name: 'Flows', path: '/chatbot/flows', icon: Workflow },
       { name: 'AI Contexts', path: '/chatbot/ai', icon: Sparkles }

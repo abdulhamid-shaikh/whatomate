@@ -19,10 +19,11 @@ type ChatbotSettingsResponse struct {
 	FallbackMessage       string                   `json:"fallback_message"`
 	FallbackButtons       []map[string]interface{} `json:"fallback_buttons"`
 	SessionTimeoutMinutes int                      `json:"session_timeout_minutes"`
-	BusinessHoursEnabled  bool                     `json:"business_hours_enabled"`
-	BusinessHours         []map[string]interface{} `json:"business_hours"`
-	OutOfHoursMessage     string                   `json:"out_of_hours_message"`
-	AIEnabled             bool                     `json:"ai_enabled"`
+	BusinessHoursEnabled       bool                     `json:"business_hours_enabled"`
+	BusinessHours              []map[string]interface{} `json:"business_hours"`
+	OutOfHoursMessage          string                   `json:"out_of_hours_message"`
+	AllowAutomatedOutsideHours bool                     `json:"allow_automated_outside_hours"`
+	AIEnabled                  bool                     `json:"ai_enabled"`
 	AIProvider            string                   `json:"ai_provider"`
 	AIModel               string                   `json:"ai_model"`
 	AIMaxTokens           int                      `json:"ai_max_tokens"`
@@ -136,10 +137,11 @@ func (a *App) GetChatbotSettings(r *fastglue.Request) error {
 		FallbackMessage:       settings.FallbackMessage,
 		FallbackButtons:       fallbackButtons,
 		SessionTimeoutMinutes: settings.SessionTimeoutMins,
-		BusinessHoursEnabled:  settings.BusinessHoursEnabled,
-		BusinessHours:         businessHours,
-		OutOfHoursMessage:     settings.OutOfHoursMessage,
-		AIEnabled:             settings.AIEnabled,
+		BusinessHoursEnabled:       settings.BusinessHoursEnabled,
+		BusinessHours:              businessHours,
+		OutOfHoursMessage:          settings.OutOfHoursMessage,
+		AllowAutomatedOutsideHours: settings.AllowAutomatedOutsideHours,
+		AIEnabled:                  settings.AIEnabled,
 		AIProvider:            settings.AIProvider,
 		AIModel:               settings.AIModel,
 		AIMaxTokens:           settings.AIMaxTokens,
@@ -160,21 +162,22 @@ func (a *App) UpdateChatbotSettings(r *fastglue.Request) error {
 	}
 
 	var req struct {
-		Enabled               *bool                      `json:"enabled"`
-		GreetingMessage       *string                    `json:"greeting_message"`
-		GreetingButtons       *[]map[string]interface{}  `json:"greeting_buttons"`
-		FallbackMessage       *string                    `json:"fallback_message"`
-		FallbackButtons       *[]map[string]interface{}  `json:"fallback_buttons"`
-		SessionTimeoutMinutes *int                       `json:"session_timeout_minutes"`
-		BusinessHoursEnabled  *bool                      `json:"business_hours_enabled"`
-		BusinessHours         *[]map[string]interface{}  `json:"business_hours"`
-		OutOfHoursMessage     *string                    `json:"out_of_hours_message"`
-		AIEnabled             *bool                      `json:"ai_enabled"`
-		AIProvider            *string                    `json:"ai_provider"`
-		AIAPIKey              *string                    `json:"ai_api_key"`
-		AIModel               *string                    `json:"ai_model"`
-		AIMaxTokens           *int                       `json:"ai_max_tokens"`
-		AISystemPrompt        *string                    `json:"ai_system_prompt"`
+		Enabled                    *bool                      `json:"enabled"`
+		GreetingMessage            *string                    `json:"greeting_message"`
+		GreetingButtons            *[]map[string]interface{}  `json:"greeting_buttons"`
+		FallbackMessage            *string                    `json:"fallback_message"`
+		FallbackButtons            *[]map[string]interface{}  `json:"fallback_buttons"`
+		SessionTimeoutMinutes      *int                       `json:"session_timeout_minutes"`
+		BusinessHoursEnabled       *bool                      `json:"business_hours_enabled"`
+		BusinessHours              *[]map[string]interface{}  `json:"business_hours"`
+		OutOfHoursMessage          *string                    `json:"out_of_hours_message"`
+		AllowAutomatedOutsideHours *bool                      `json:"allow_automated_outside_hours"`
+		AIEnabled                  *bool                      `json:"ai_enabled"`
+		AIProvider                 *string                    `json:"ai_provider"`
+		AIAPIKey                   *string                    `json:"ai_api_key"`
+		AIModel                    *string                    `json:"ai_model"`
+		AIMaxTokens                *int                       `json:"ai_max_tokens"`
+		AISystemPrompt             *string                    `json:"ai_system_prompt"`
 	}
 
 	if err := json.Unmarshal(r.RequestCtx.PostBody(), &req); err != nil {
@@ -231,6 +234,9 @@ func (a *App) UpdateChatbotSettings(r *fastglue.Request) error {
 	}
 	if req.OutOfHoursMessage != nil {
 		settings.OutOfHoursMessage = *req.OutOfHoursMessage
+	}
+	if req.AllowAutomatedOutsideHours != nil {
+		settings.AllowAutomatedOutsideHours = *req.AllowAutomatedOutsideHours
 	}
 	if req.AIEnabled != nil {
 		settings.AIEnabled = *req.AIEnabled

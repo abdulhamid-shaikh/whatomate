@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import { Slider } from '@/components/ui/slider'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Select,
@@ -18,13 +16,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'vue-sonner'
-import { Settings, Bot, Bell, Loader2, Brain, Plus, X } from 'lucide-vue-next'
-import { chatbotService, usersService } from '@/services/api'
-
-interface MessageButton {
-  id: string
-  title: string
-}
+import { Settings, Bell, Loader2 } from 'lucide-vue-next'
+import { usersService } from '@/services/api'
 
 const isSubmitting = ref(false)
 
@@ -34,131 +27,13 @@ const generalSettings = ref({
   date_format: 'YYYY-MM-DD'
 })
 
-interface BusinessHour {
-  day: number
-  enabled: boolean
-  start_time: string
-  end_time: string
-}
-
-const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-
-const defaultBusinessHours: BusinessHour[] = [
-  { day: 0, enabled: false, start_time: '09:00', end_time: '17:00' },
-  { day: 1, enabled: true, start_time: '09:00', end_time: '17:00' },
-  { day: 2, enabled: true, start_time: '09:00', end_time: '17:00' },
-  { day: 3, enabled: true, start_time: '09:00', end_time: '17:00' },
-  { day: 4, enabled: true, start_time: '09:00', end_time: '17:00' },
-  { day: 5, enabled: true, start_time: '09:00', end_time: '17:00' },
-  { day: 6, enabled: false, start_time: '09:00', end_time: '17:00' },
-]
-
-const chatbotSettings = ref({
-  greeting_message: '',
-  greeting_buttons: [] as MessageButton[],
-  fallback_message: '',
-  fallback_buttons: [] as MessageButton[],
-  session_timeout_minutes: 30,
-  business_hours_enabled: false,
-  business_hours: [...defaultBusinessHours] as BusinessHour[],
-  out_of_hours_message: '',
-  transfer_message: ''
-})
-
-// Button management functions
-const addGreetingButton = () => {
-  if (chatbotSettings.value.greeting_buttons.length >= 10) {
-    toast.error('Maximum 10 buttons allowed')
-    return
-  }
-  const id = `btn_${Date.now()}`
-  chatbotSettings.value.greeting_buttons.push({ id, title: '' })
-}
-
-const removeGreetingButton = (index: number) => {
-  chatbotSettings.value.greeting_buttons.splice(index, 1)
-}
-
-const addFallbackButton = () => {
-  if (chatbotSettings.value.fallback_buttons.length >= 10) {
-    toast.error('Maximum 10 buttons allowed')
-    return
-  }
-  const id = `btn_${Date.now()}`
-  chatbotSettings.value.fallback_buttons.push({ id, title: '' })
-}
-
-const removeFallbackButton = (index: number) => {
-  chatbotSettings.value.fallback_buttons.splice(index, 1)
-}
-
-const aiSettings = ref({
-  ai_enabled: false,
-  ai_provider: '',
-  ai_api_key: '',
-  ai_model: '',
-  ai_max_tokens: 500,
-  ai_system_prompt: ''
-})
-
-// Separate ref for Switch to ensure reactivity
-const isAIEnabled = ref(false)
-
-const aiProviders = [
-  { value: 'openai', label: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
-  { value: 'anthropic', label: 'Anthropic', models: ['claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest', 'claude-3-opus-latest'] },
-  { value: 'google', label: 'Google AI', models: ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'] }
-]
-
-const availableModels = computed(() => {
-  const provider = aiProviders.find(p => p.value === aiSettings.value.ai_provider)
-  return provider?.models || []
-})
-
-// Keep aiSettings in sync with isAIEnabled
-watch(isAIEnabled, (newValue) => {
-  aiSettings.value.ai_enabled = newValue
+const notificationSettings = ref({
+  email_notifications: true,
+  new_message_alerts: true,
+  campaign_updates: true
 })
 
 onMounted(async () => {
-  // Load chatbot settings
-  try {
-    const response = await chatbotService.getSettings()
-    const data = response.data.data || response.data
-    if (data.settings) {
-      // Merge loaded business hours with defaults (in case some days are missing)
-      const loadedHours = data.settings.business_hours || []
-      const mergedHours = defaultBusinessHours.map(defaultDay => {
-        const loaded = loadedHours.find((h: BusinessHour) => h.day === defaultDay.day)
-        return loaded || defaultDay
-      })
-
-      chatbotSettings.value = {
-        greeting_message: data.settings.greeting_message || '',
-        greeting_buttons: data.settings.greeting_buttons || [],
-        fallback_message: data.settings.fallback_message || '',
-        fallback_buttons: data.settings.fallback_buttons || [],
-        session_timeout_minutes: data.settings.session_timeout_minutes || 30,
-        business_hours_enabled: data.settings.business_hours_enabled || false,
-        business_hours: mergedHours,
-        out_of_hours_message: data.settings.out_of_hours_message || '',
-        transfer_message: ''
-      }
-      const aiEnabledValue = data.settings.ai_enabled === true
-      isAIEnabled.value = aiEnabledValue
-      aiSettings.value = {
-        ai_enabled: aiEnabledValue,
-        ai_provider: data.settings.ai_provider || '',
-        ai_api_key: '', // Don't load API key for security
-        ai_model: data.settings.ai_model || '',
-        ai_max_tokens: data.settings.ai_max_tokens || 500,
-        ai_system_prompt: data.settings.ai_system_prompt || ''
-      }
-    }
-  } catch (error) {
-    console.error('Failed to load chatbot settings:', error)
-  }
-
   // Load user notification settings
   try {
     const response = await usersService.me()
@@ -175,12 +50,6 @@ onMounted(async () => {
   }
 })
 
-const notificationSettings = ref({
-  email_notifications: true,
-  new_message_alerts: true,
-  campaign_updates: true
-})
-
 async function saveGeneralSettings() {
   isSubmitting.value = true
   try {
@@ -189,63 +58,6 @@ async function saveGeneralSettings() {
     toast.success('General settings saved')
   } catch (error) {
     toast.error('Failed to save settings')
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-async function saveChatbotSettings() {
-  // Validate buttons have titles
-  const invalidGreetingBtn = chatbotSettings.value.greeting_buttons.find(btn => !btn.title.trim())
-  if (invalidGreetingBtn) {
-    toast.error('All greeting buttons must have a title')
-    return
-  }
-  const invalidFallbackBtn = chatbotSettings.value.fallback_buttons.find(btn => !btn.title.trim())
-  if (invalidFallbackBtn) {
-    toast.error('All fallback buttons must have a title')
-    return
-  }
-
-  isSubmitting.value = true
-  try {
-    await chatbotService.updateSettings({
-      greeting_message: chatbotSettings.value.greeting_message,
-      greeting_buttons: chatbotSettings.value.greeting_buttons.filter(btn => btn.title.trim()),
-      fallback_message: chatbotSettings.value.fallback_message,
-      fallback_buttons: chatbotSettings.value.fallback_buttons.filter(btn => btn.title.trim()),
-      session_timeout_minutes: chatbotSettings.value.session_timeout_minutes,
-      business_hours_enabled: chatbotSettings.value.business_hours_enabled,
-      business_hours: chatbotSettings.value.business_hours,
-      out_of_hours_message: chatbotSettings.value.out_of_hours_message
-    })
-    toast.success('Chatbot settings saved')
-  } catch (error) {
-    toast.error('Failed to save settings')
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-async function saveAISettings() {
-  isSubmitting.value = true
-  try {
-    const payload: any = {
-      ai_enabled: aiSettings.value.ai_enabled,
-      ai_provider: aiSettings.value.ai_provider,
-      ai_model: aiSettings.value.ai_model,
-      ai_max_tokens: aiSettings.value.ai_max_tokens,
-      ai_system_prompt: aiSettings.value.ai_system_prompt
-    }
-    // Only send API key if it's been changed (not empty)
-    if (aiSettings.value.ai_api_key) {
-      payload.ai_api_key = aiSettings.value.ai_api_key
-    }
-    await chatbotService.updateSettings(payload)
-    toast.success('AI settings saved')
-    aiSettings.value.ai_api_key = '' // Clear the API key field after save
-  } catch (error) {
-    toast.error('Failed to save AI settings')
   } finally {
     isSubmitting.value = false
   }
@@ -285,18 +97,10 @@ async function saveNotificationSettings() {
     <ScrollArea class="flex-1">
       <div class="p-6 space-y-4 max-w-4xl mx-auto">
         <Tabs default-value="general" class="w-full">
-          <TabsList class="grid w-full grid-cols-4 mb-6">
+          <TabsList class="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="general">
               <Settings class="h-4 w-4 mr-2" />
               General
-            </TabsTrigger>
-            <TabsTrigger value="chatbot">
-              <Bot class="h-4 w-4 mr-2" />
-              Chatbot
-            </TabsTrigger>
-            <TabsTrigger value="ai">
-              <Brain class="h-4 w-4 mr-2" />
-              AI
             </TabsTrigger>
             <TabsTrigger value="notifications">
               <Bell class="h-4 w-4 mr-2" />
@@ -352,294 +156,6 @@ async function saveNotificationSettings() {
                 </div>
                 <div class="flex justify-end">
                   <Button @click="saveGeneralSettings" :disabled="isSubmitting">
-                    <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
-                    Save Changes
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <!-- Chatbot Settings Tab -->
-          <TabsContent value="chatbot">
-            <Card>
-              <CardHeader>
-                <CardTitle>Chatbot Settings</CardTitle>
-                <CardDescription>Configure default chatbot behavior</CardDescription>
-              </CardHeader>
-              <CardContent class="space-y-4">
-                <div class="space-y-2">
-                  <Label for="greeting">Greeting Message</Label>
-                  <Textarea
-                    id="greeting"
-                    v-model="chatbotSettings.greeting_message"
-                    placeholder="Hello! How can I help you?"
-                    :rows="2"
-                  />
-                  <!-- Greeting Buttons -->
-                  <div class="mt-2">
-                    <div class="flex items-center justify-between mb-2">
-                      <Label class="text-sm text-muted-foreground">Quick Reply Buttons (optional)</Label>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        @click="addGreetingButton"
-                        :disabled="chatbotSettings.greeting_buttons.length >= 10"
-                      >
-                        <Plus class="h-4 w-4 mr-1" />
-                        Add Button
-                      </Button>
-                    </div>
-                    <div v-if="chatbotSettings.greeting_buttons.length > 0" class="space-y-2">
-                      <div
-                        v-for="(button, index) in chatbotSettings.greeting_buttons"
-                        :key="button.id"
-                        class="flex items-center gap-2"
-                      >
-                        <Input
-                          v-model="button.title"
-                          placeholder="Button text (max 20 chars)"
-                          maxlength="20"
-                          class="flex-1"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          @click="removeGreetingButton(index)"
-                        >
-                          <X class="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p class="text-xs text-muted-foreground">
-                        1-3 buttons show as reply buttons, 4-10 show as a list menu
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div class="space-y-2">
-                  <Label for="fallback">Fallback Message</Label>
-                  <Textarea
-                    id="fallback"
-                    v-model="chatbotSettings.fallback_message"
-                    placeholder="Sorry, I didn't understand that."
-                    :rows="2"
-                  />
-                  <!-- Fallback Buttons -->
-                  <div class="mt-2">
-                    <div class="flex items-center justify-between mb-2">
-                      <Label class="text-sm text-muted-foreground">Quick Reply Buttons (optional)</Label>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        @click="addFallbackButton"
-                        :disabled="chatbotSettings.fallback_buttons.length >= 10"
-                      >
-                        <Plus class="h-4 w-4 mr-1" />
-                        Add Button
-                      </Button>
-                    </div>
-                    <div v-if="chatbotSettings.fallback_buttons.length > 0" class="space-y-2">
-                      <div
-                        v-for="(button, index) in chatbotSettings.fallback_buttons"
-                        :key="button.id"
-                        class="flex items-center gap-2"
-                      >
-                        <Input
-                          v-model="button.title"
-                          placeholder="Button text (max 20 chars)"
-                          maxlength="20"
-                          class="flex-1"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          @click="removeFallbackButton(index)"
-                        >
-                          <X class="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p class="text-xs text-muted-foreground">
-                        1-3 buttons show as reply buttons, 4-10 show as a list menu
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div class="space-y-2">
-                  <Label for="transfer">Transfer Message</Label>
-                  <Textarea
-                    id="transfer"
-                    v-model="chatbotSettings.transfer_message"
-                    placeholder="Transferring you to a human agent..."
-                    :rows="2"
-                  />
-                </div>
-                <div class="space-y-2">
-                  <Label for="timeout">Session Timeout (minutes)</Label>
-                  <Input
-                    id="timeout"
-                    v-model.number="chatbotSettings.session_timeout_minutes"
-                    type="number"
-                    min="5"
-                    max="120"
-                  />
-                </div>
-
-                <!-- Business Hours -->
-                <div class="space-y-4 pt-4 border-t">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <Label class="text-base">Business Hours</Label>
-                      <p class="text-sm text-muted-foreground">Set when the chatbot is active. Outside these hours, the out-of-hours message will be sent.</p>
-                    </div>
-                    <Switch
-                      :checked="chatbotSettings.business_hours_enabled"
-                      @update:checked="chatbotSettings.business_hours_enabled = $event"
-                    />
-                  </div>
-
-                  <div v-if="chatbotSettings.business_hours_enabled" class="space-y-4">
-                    <div class="space-y-2">
-                      <Label>Out of Hours Message</Label>
-                      <Textarea
-                        v-model="chatbotSettings.out_of_hours_message"
-                        placeholder="Sorry, we're currently closed. Our business hours are Monday-Friday 9AM-5PM. We'll get back to you soon!"
-                        :rows="2"
-                      />
-                    </div>
-
-                    <div class="border rounded-lg p-4 space-y-3">
-                      <div
-                        v-for="hour in chatbotSettings.business_hours"
-                        :key="hour.day"
-                        class="flex items-center gap-4"
-                      >
-                        <div class="w-24">
-                          <Switch
-                            :checked="hour.enabled"
-                            @update:checked="hour.enabled = $event"
-                          />
-                        </div>
-                        <span class="w-24 font-medium" :class="{ 'text-muted-foreground': !hour.enabled }">
-                          {{ daysOfWeek[hour.day] }}
-                        </span>
-                        <div class="flex items-center gap-2" :class="{ 'opacity-50': !hour.enabled }">
-                          <Input
-                            v-model="hour.start_time"
-                            type="time"
-                            class="w-32"
-                            :disabled="!hour.enabled"
-                          />
-                          <span class="text-muted-foreground">to</span>
-                          <Input
-                            v-model="hour.end_time"
-                            type="time"
-                            class="w-32"
-                            :disabled="!hour.enabled"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="flex justify-end">
-                  <Button @click="saveChatbotSettings" :disabled="isSubmitting">
-                    <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
-                    Save Changes
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <!-- AI Settings Tab -->
-          <TabsContent value="ai">
-            <Card>
-              <CardHeader>
-                <CardTitle>AI Settings</CardTitle>
-                <CardDescription>Configure AI-powered responses for your chatbot</CardDescription>
-              </CardHeader>
-              <CardContent class="space-y-4">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <p class="font-medium">Enable AI Responses</p>
-                    <p class="text-sm text-muted-foreground">Use AI to generate responses when no flow matches</p>
-                  </div>
-                  <Switch
-                    :checked="isAIEnabled"
-                    @update:checked="(val: boolean) => isAIEnabled = val"
-                  />
-                </div>
-
-                <div v-if="isAIEnabled" class="space-y-4 pt-2">
-                  <Separator />
-
-                  <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-2">
-                      <Label for="ai_provider">AI Provider</Label>
-                      <Select v-model="aiSettings.ai_provider">
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select provider..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem v-for="provider in aiProviders" :key="provider.value" :value="provider.value">
-                            {{ provider.label }}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div class="space-y-2">
-                      <Label for="ai_model">Model</Label>
-                      <Select v-model="aiSettings.ai_model" :disabled="!aiSettings.ai_provider">
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select model..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem v-for="model in availableModels" :key="model" :value="model">
-                            {{ model }}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div class="space-y-2">
-                    <Label for="ai_api_key">API Key</Label>
-                    <Input
-                      id="ai_api_key"
-                      v-model="aiSettings.ai_api_key"
-                      type="password"
-                      placeholder="Enter API key (leave empty to keep existing)"
-                    />
-                    <p class="text-xs text-muted-foreground">Your API key is encrypted and stored securely</p>
-                  </div>
-
-                  <div class="space-y-2">
-                    <Label for="ai_max_tokens">Max Tokens</Label>
-                    <Input
-                      id="ai_max_tokens"
-                      v-model.number="aiSettings.ai_max_tokens"
-                      type="number"
-                      min="100"
-                      max="4000"
-                    />
-                    <p class="text-xs text-muted-foreground">Maximum number of tokens for AI responses (100-4000)</p>
-                  </div>
-
-                  <div class="space-y-2">
-                    <Label for="ai_system_prompt">System Prompt (optional)</Label>
-                    <Textarea
-                      id="ai_system_prompt"
-                      v-model="aiSettings.ai_system_prompt"
-                      placeholder="You are a helpful customer service assistant..."
-                      :rows="3"
-                    />
-                    <p class="text-xs text-muted-foreground">Instructions for the AI on how to respond</p>
-                  </div>
-                </div>
-
-                <div class="flex justify-end pt-2">
-                  <Button @click="saveAISettings" :disabled="isSubmitting">
                     <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
                     Save Changes
                   </Button>

@@ -79,6 +79,12 @@ const router = createRouter({
           meta: { roles: ['admin', 'manager'] }
         },
         {
+          path: 'chatbot/settings',
+          name: 'chatbot-settings',
+          component: () => import('@/views/chatbot/ChatbotSettingsView.vue'),
+          meta: { roles: ['admin', 'manager'] }
+        },
+        {
           path: 'chatbot/keywords',
           name: 'chatbot-keywords',
           component: () => import('@/views/chatbot/KeywordsView.vue'),

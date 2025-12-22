@@ -103,11 +103,16 @@ func (a *App) processIncomingMessageFull(phoneNumberID string, msg IncomingTextM
 	// Check business hours if enabled
 	if settings.BusinessHoursEnabled && len(settings.BusinessHours) > 0 {
 		if !a.isWithinBusinessHours(settings.BusinessHours) {
-			a.Log.Info("Outside business hours, sending out of hours message")
-			if settings.OutOfHoursMessage != "" {
-				a.sendAndSaveTextMessage(&account, contact, settings.OutOfHoursMessage)
+			// If automated responses are not allowed outside hours, send out-of-hours message and stop
+			if !settings.AllowAutomatedOutsideHours {
+				a.Log.Info("Outside business hours, sending out of hours message")
+				if settings.OutOfHoursMessage != "" {
+					a.sendAndSaveTextMessage(&account, contact, settings.OutOfHoursMessage)
+				}
+				return
 			}
-			return
+			// AllowAutomatedOutsideHours is true, continue processing flows/keywords/AI
+			a.Log.Info("Outside business hours but automated responses allowed, continuing")
 		}
 	}
 

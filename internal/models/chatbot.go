@@ -17,9 +17,10 @@ type ChatbotSettings struct {
 	GreetingButtons      JSONBArray  `gorm:"type:jsonb;default:'[]'" json:"greeting_buttons"` // [{id, title}] - max 10 buttons
 	FallbackMessage      string      `gorm:"type:text" json:"fallback_message"`
 	FallbackButtons      JSONBArray  `gorm:"type:jsonb;default:'[]'" json:"fallback_buttons"` // [{id, title}] - max 10 buttons
-	BusinessHoursEnabled bool        `gorm:"default:false" json:"business_hours_enabled"`
-	BusinessHours        JSONBArray  `gorm:"type:jsonb;default:'[]'" json:"business_hours"` // [{day, enabled, start_time, end_time}]
-	OutOfHoursMessage    string      `gorm:"type:text" json:"out_of_hours_message"`
+	BusinessHoursEnabled       bool       `gorm:"default:false" json:"business_hours_enabled"`
+	BusinessHours              JSONBArray `gorm:"type:jsonb;default:'[]'" json:"business_hours"` // [{day, enabled, start_time, end_time}]
+	OutOfHoursMessage          string     `gorm:"type:text" json:"out_of_hours_message"`
+	AllowAutomatedOutsideHours bool       `gorm:"default:true" json:"allow_automated_outside_hours"` // Allow flows/keywords/AI outside business hours
 	AIEnabled            bool        `gorm:"column:ai_enabled;default:false" json:"ai_enabled"`
 	AIProvider           string      `gorm:"column:ai_provider;size:20" json:"ai_provider"` // openai, anthropic, google
 	AIAPIKey             string      `gorm:"column:ai_api_key;type:text" json:"-"`         // encrypted
