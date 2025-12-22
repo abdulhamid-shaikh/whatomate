@@ -466,28 +466,28 @@ onMounted(() => {
               <div class="grid grid-cols-2 gap-3">
                 <RouterLink
                   to="/chat"
-                  class="flex flex-col items-center justify-center p-4 rounded-lg border hover:bg-accent transition-colors"
+                  class="flex flex-col items-center justify-center p-4 rounded-lg border hover:bg-accent transition-colors text-foreground"
                 >
                   <MessageSquare class="h-8 w-8 text-primary mb-2" />
                   <span class="text-sm font-medium">Start Chat</span>
                 </RouterLink>
                 <RouterLink
                   to="/campaigns"
-                  class="flex flex-col items-center justify-center p-4 rounded-lg border hover:bg-accent transition-colors"
+                  class="flex flex-col items-center justify-center p-4 rounded-lg border hover:bg-accent transition-colors text-foreground"
                 >
                   <Send class="h-8 w-8 text-orange-500 mb-2" />
                   <span class="text-sm font-medium">New Campaign</span>
                 </RouterLink>
                 <RouterLink
                   to="/templates"
-                  class="flex flex-col items-center justify-center p-4 rounded-lg border hover:bg-accent transition-colors"
+                  class="flex flex-col items-center justify-center p-4 rounded-lg border hover:bg-accent transition-colors text-foreground"
                 >
                   <span class="h-8 w-8 text-blue-500 mb-2 text-2xl">T</span>
                   <span class="text-sm font-medium">Templates</span>
                 </RouterLink>
                 <RouterLink
                   to="/chatbot"
-                  class="flex flex-col items-center justify-center p-4 rounded-lg border hover:bg-accent transition-colors"
+                  class="flex flex-col items-center justify-center p-4 rounded-lg border hover:bg-accent transition-colors text-foreground"
                 >
                   <Bot class="h-8 w-8 text-purple-500 mb-2" />
                   <span class="text-sm font-medium">Chatbot</span>

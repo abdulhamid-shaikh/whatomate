@@ -163,7 +163,7 @@ async function changePassword() {
               </div>
             </div>
             <div class="flex justify-end">
-              <Button @click="changePassword" :disabled="isChangingPassword">
+              <Button variant="outline" size="sm" @click="changePassword" :disabled="isChangingPassword">
                 <Loader2 v-if="isChangingPassword" class="mr-2 h-4 w-4 animate-spin" />
                 Change Password
               </Button>

@@ -155,7 +155,7 @@ async function saveNotificationSettings() {
                   </div>
                 </div>
                 <div class="flex justify-end">
-                  <Button @click="saveGeneralSettings" :disabled="isSubmitting">
+                  <Button variant="outline" size="sm" @click="saveGeneralSettings" :disabled="isSubmitting">
                     <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
                     Save Changes
                   </Button>
@@ -205,7 +205,7 @@ async function saveNotificationSettings() {
                   />
                 </div>
                 <div class="flex justify-end pt-4">
-                  <Button @click="saveNotificationSettings" :disabled="isSubmitting">
+                  <Button variant="outline" size="sm" @click="saveNotificationSettings" :disabled="isSubmitting">
                     <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
                     Save Changes
                   </Button>

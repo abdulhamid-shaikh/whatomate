@@ -437,7 +437,7 @@ async function saveAISettings() {
                 </div>
 
                 <div class="flex justify-end">
-                  <Button @click="saveChatbotSettings" :disabled="isSubmitting">
+                  <Button variant="outline" size="sm" @click="saveChatbotSettings" :disabled="isSubmitting">
                     <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
                     Save Changes
                   </Button>
@@ -526,7 +526,7 @@ async function saveAISettings() {
                 </div>
 
                 <div class="flex justify-end pt-2">
-                  <Button @click="saveBusinessHoursSettings" :disabled="isSubmitting">
+                  <Button variant="outline" size="sm" @click="saveBusinessHoursSettings" :disabled="isSubmitting">
                     <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
                     Save Changes
                   </Button>
@@ -622,7 +622,7 @@ async function saveAISettings() {
                 </div>
 
                 <div class="flex justify-end pt-2">
-                  <Button @click="saveAISettings" :disabled="isSubmitting">
+                  <Button variant="outline" size="sm" @click="saveAISettings" :disabled="isSubmitting">
                     <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
                     Save Changes
                   </Button>
