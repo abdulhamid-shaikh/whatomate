@@ -34,12 +34,34 @@ const generalSettings = ref({
   date_format: 'YYYY-MM-DD'
 })
 
+interface BusinessHour {
+  day: number
+  enabled: boolean
+  start_time: string
+  end_time: string
+}
+
+const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+const defaultBusinessHours: BusinessHour[] = [
+  { day: 0, enabled: false, start_time: '09:00', end_time: '17:00' },
+  { day: 1, enabled: true, start_time: '09:00', end_time: '17:00' },
+  { day: 2, enabled: true, start_time: '09:00', end_time: '17:00' },
+  { day: 3, enabled: true, start_time: '09:00', end_time: '17:00' },
+  { day: 4, enabled: true, start_time: '09:00', end_time: '17:00' },
+  { day: 5, enabled: true, start_time: '09:00', end_time: '17:00' },
+  { day: 6, enabled: false, start_time: '09:00', end_time: '17:00' },
+]
+
 const chatbotSettings = ref({
   greeting_message: '',
   greeting_buttons: [] as MessageButton[],
   fallback_message: '',
   fallback_buttons: [] as MessageButton[],
   session_timeout_minutes: 30,
+  business_hours_enabled: false,
+  business_hours: [...defaultBusinessHours] as BusinessHour[],
+  out_of_hours_message: '',
   transfer_message: ''
 })
 
@@ -104,12 +126,22 @@ onMounted(async () => {
     const response = await chatbotService.getSettings()
     const data = response.data.data || response.data
     if (data.settings) {
+      // Merge loaded business hours with defaults (in case some days are missing)
+      const loadedHours = data.settings.business_hours || []
+      const mergedHours = defaultBusinessHours.map(defaultDay => {
+        const loaded = loadedHours.find((h: BusinessHour) => h.day === defaultDay.day)
+        return loaded || defaultDay
+      })
+
       chatbotSettings.value = {
         greeting_message: data.settings.greeting_message || '',
         greeting_buttons: data.settings.greeting_buttons || [],
         fallback_message: data.settings.fallback_message || '',
         fallback_buttons: data.settings.fallback_buttons || [],
         session_timeout_minutes: data.settings.session_timeout_minutes || 30,
+        business_hours_enabled: data.settings.business_hours_enabled || false,
+        business_hours: mergedHours,
+        out_of_hours_message: data.settings.out_of_hours_message || '',
         transfer_message: ''
       }
       const aiEnabledValue = data.settings.ai_enabled === true
@@ -182,7 +214,10 @@ async function saveChatbotSettings() {
       greeting_buttons: chatbotSettings.value.greeting_buttons.filter(btn => btn.title.trim()),
       fallback_message: chatbotSettings.value.fallback_message,
       fallback_buttons: chatbotSettings.value.fallback_buttons.filter(btn => btn.title.trim()),
-      session_timeout_minutes: chatbotSettings.value.session_timeout_minutes
+      session_timeout_minutes: chatbotSettings.value.session_timeout_minutes,
+      business_hours_enabled: chatbotSettings.value.business_hours_enabled,
+      business_hours: chatbotSettings.value.business_hours,
+      out_of_hours_message: chatbotSettings.value.out_of_hours_message
     })
     toast.success('Chatbot settings saved')
   } catch (error) {
@@ -448,6 +483,65 @@ async function saveNotificationSettings() {
                     max="120"
                   />
                 </div>
+
+                <!-- Business Hours -->
+                <div class="space-y-4 pt-4 border-t">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <Label class="text-base">Business Hours</Label>
+                      <p class="text-sm text-muted-foreground">Set when the chatbot is active. Outside these hours, the out-of-hours message will be sent.</p>
+                    </div>
+                    <Switch
+                      :checked="chatbotSettings.business_hours_enabled"
+                      @update:checked="chatbotSettings.business_hours_enabled = $event"
+                    />
+                  </div>
+
+                  <div v-if="chatbotSettings.business_hours_enabled" class="space-y-4">
+                    <div class="space-y-2">
+                      <Label>Out of Hours Message</Label>
+                      <Textarea
+                        v-model="chatbotSettings.out_of_hours_message"
+                        placeholder="Sorry, we're currently closed. Our business hours are Monday-Friday 9AM-5PM. We'll get back to you soon!"
+                        :rows="2"
+                      />
+                    </div>
+
+                    <div class="border rounded-lg p-4 space-y-3">
+                      <div
+                        v-for="hour in chatbotSettings.business_hours"
+                        :key="hour.day"
+                        class="flex items-center gap-4"
+                      >
+                        <div class="w-24">
+                          <Switch
+                            :checked="hour.enabled"
+                            @update:checked="hour.enabled = $event"
+                          />
+                        </div>
+                        <span class="w-24 font-medium" :class="{ 'text-muted-foreground': !hour.enabled }">
+                          {{ daysOfWeek[hour.day] }}
+                        </span>
+                        <div class="flex items-center gap-2" :class="{ 'opacity-50': !hour.enabled }">
+                          <Input
+                            v-model="hour.start_time"
+                            type="time"
+                            class="w-32"
+                            :disabled="!hour.enabled"
+                          />
+                          <span class="text-muted-foreground">to</span>
+                          <Input
+                            v-model="hour.end_time"
+                            type="time"
+                            class="w-32"
+                            :disabled="!hour.enabled"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="flex justify-end">
                   <Button @click="saveChatbotSettings" :disabled="isSubmitting">
                     <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />

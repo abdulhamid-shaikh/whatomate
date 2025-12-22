@@ -100,6 +100,17 @@ func (a *App) processIncomingMessageFull(phoneNumberID string, msg IncomingTextM
 	}
 	a.Log.Info("Chatbot settings loaded", "settings_id", settings.ID, "is_enabled", settings.IsEnabled, "ai_enabled", settings.AIEnabled, "ai_provider", settings.AIProvider, "default_response", settings.DefaultResponse)
 
+	// Check business hours if enabled
+	if settings.BusinessHoursEnabled && len(settings.BusinessHours) > 0 {
+		if !a.isWithinBusinessHours(settings.BusinessHours) {
+			a.Log.Info("Outside business hours, sending out of hours message")
+			if settings.OutOfHoursMessage != "" {
+				a.sendAndSaveTextMessage(&account, contact, settings.OutOfHoursMessage)
+			}
+			return
+		}
+	}
+
 	// Only process text and interactive messages for chatbot
 	if messageText == "" {
 		a.Log.Debug("Skipping message with no text content for chatbot", "type", msg.Type)
@@ -1638,4 +1649,53 @@ func (a *App) saveIncomingMessage(account *models.WhatsAppAccount, contact *mode
 			},
 		})
 	}
+}
+
+// isWithinBusinessHours checks if current time is within configured business hours
+func (a *App) isWithinBusinessHours(businessHours models.JSONBArray) bool {
+	now := time.Now()
+	currentDay := int(now.Weekday()) // 0 = Sunday, 1 = Monday, etc.
+	currentTime := now.Format("15:04")
+
+	for _, bh := range businessHours {
+		bhMap, ok := bh.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		// Get day (0-6, Sunday-Saturday)
+		day, ok := bhMap["day"].(float64)
+		if !ok {
+			continue
+		}
+
+		if int(day) != currentDay {
+			continue
+		}
+
+		// Check if enabled for this day
+		enabled, ok := bhMap["enabled"].(bool)
+		if !ok || !enabled {
+			return false // Day exists but is disabled
+		}
+
+		// Get start and end times
+		startTime, ok := bhMap["start_time"].(string)
+		if !ok {
+			continue
+		}
+		endTime, ok := bhMap["end_time"].(string)
+		if !ok {
+			continue
+		}
+
+		// Compare times (simple string comparison works for HH:MM format)
+		if currentTime >= startTime && currentTime <= endTime {
+			return true
+		}
+		return false // Found the day but outside hours
+	}
+
+	// If no matching day found, assume outside business hours
+	return false
 }

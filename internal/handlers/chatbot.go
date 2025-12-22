@@ -19,6 +19,9 @@ type ChatbotSettingsResponse struct {
 	FallbackMessage       string                   `json:"fallback_message"`
 	FallbackButtons       []map[string]interface{} `json:"fallback_buttons"`
 	SessionTimeoutMinutes int                      `json:"session_timeout_minutes"`
+	BusinessHoursEnabled  bool                     `json:"business_hours_enabled"`
+	BusinessHours         []map[string]interface{} `json:"business_hours"`
+	OutOfHoursMessage     string                   `json:"out_of_hours_message"`
 	AIEnabled             bool                     `json:"ai_enabled"`
 	AIProvider            string                   `json:"ai_provider"`
 	AIModel               string                   `json:"ai_model"`
@@ -116,6 +119,16 @@ func (a *App) GetChatbotSettings(r *fastglue.Request) error {
 		}
 	}
 
+	// Convert business hours array
+	businessHours := make([]map[string]interface{}, 0)
+	if settings.BusinessHours != nil {
+		for _, bh := range settings.BusinessHours {
+			if bhMap, ok := bh.(map[string]interface{}); ok {
+				businessHours = append(businessHours, bhMap)
+			}
+		}
+	}
+
 	settingsResp := ChatbotSettingsResponse{
 		Enabled:               settings.IsEnabled,
 		GreetingMessage:       settings.DefaultResponse,
@@ -123,6 +136,9 @@ func (a *App) GetChatbotSettings(r *fastglue.Request) error {
 		FallbackMessage:       settings.FallbackMessage,
 		FallbackButtons:       fallbackButtons,
 		SessionTimeoutMinutes: settings.SessionTimeoutMins,
+		BusinessHoursEnabled:  settings.BusinessHoursEnabled,
+		BusinessHours:         businessHours,
+		OutOfHoursMessage:     settings.OutOfHoursMessage,
 		AIEnabled:             settings.AIEnabled,
 		AIProvider:            settings.AIProvider,
 		AIModel:               settings.AIModel,
@@ -150,6 +166,9 @@ func (a *App) UpdateChatbotSettings(r *fastglue.Request) error {
 		FallbackMessage       *string                    `json:"fallback_message"`
 		FallbackButtons       *[]map[string]interface{}  `json:"fallback_buttons"`
 		SessionTimeoutMinutes *int                       `json:"session_timeout_minutes"`
+		BusinessHoursEnabled  *bool                      `json:"business_hours_enabled"`
+		BusinessHours         *[]map[string]interface{}  `json:"business_hours"`
+		OutOfHoursMessage     *string                    `json:"out_of_hours_message"`
 		AIEnabled             *bool                      `json:"ai_enabled"`
 		AIProvider            *string                    `json:"ai_provider"`
 		AIAPIKey              *string                    `json:"ai_api_key"`
@@ -199,6 +218,19 @@ func (a *App) UpdateChatbotSettings(r *fastglue.Request) error {
 	}
 	if req.SessionTimeoutMinutes != nil {
 		settings.SessionTimeoutMins = *req.SessionTimeoutMinutes
+	}
+	if req.BusinessHoursEnabled != nil {
+		settings.BusinessHoursEnabled = *req.BusinessHoursEnabled
+	}
+	if req.BusinessHours != nil {
+		hours := make([]interface{}, len(*req.BusinessHours))
+		for i, bh := range *req.BusinessHours {
+			hours[i] = bh
+		}
+		settings.BusinessHours = hours
+	}
+	if req.OutOfHoursMessage != nil {
+		settings.OutOfHoursMessage = *req.OutOfHoursMessage
 	}
 	if req.AIEnabled != nil {
 		settings.AIEnabled = *req.AIEnabled
