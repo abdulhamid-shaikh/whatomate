@@ -543,7 +543,8 @@ func (a *App) matchKeywordRules(orgID uuid.UUID, accountName, messageText string
 }
 
 // sendTextMessage sends a text message via WhatsApp Cloud API
-func (a *App) sendTextMessage(account *models.WhatsAppAccount, to, message string) error {
+// Returns the WhatsApp message ID and any error
+func (a *App) sendTextMessage(account *models.WhatsAppAccount, to, message string) (string, error) {
 	waAccount := &whatsapp.Account{
 		PhoneID:     account.PhoneID,
 		BusinessID:  account.BusinessID,
@@ -551,8 +552,7 @@ func (a *App) sendTextMessage(account *models.WhatsAppAccount, to, message strin
 		AccessToken: account.AccessToken,
 	}
 	ctx := context.Background()
-	_, err := a.WhatsApp.SendTextMessage(ctx, waAccount, to, message)
-	return err
+	return a.WhatsApp.SendTextMessage(ctx, waAccount, to, message)
 }
 
 // sendAndSaveTextMessage sends a text message and saves it to the database
@@ -621,7 +621,7 @@ func (a *App) sendAndSaveTextMessage(account *models.WhatsAppAccount, contact *m
 
 // sendAndSaveInteractiveButtons sends an interactive button message and saves it to the database
 func (a *App) sendAndSaveInteractiveButtons(account *models.WhatsAppAccount, contact *models.Contact, bodyText string, buttons []map[string]interface{}) error {
-	err := a.sendInteractiveButtons(account, contact.PhoneNumber, bodyText, buttons)
+	wamid, err := a.sendInteractiveButtons(account, contact.PhoneNumber, bodyText, buttons)
 
 	// Create message record with interactive data
 	// Convert buttons to []interface{} for JSONB storage
@@ -660,6 +660,8 @@ func (a *App) sendAndSaveInteractiveButtons(account *models.WhatsAppAccount, con
 	if err != nil {
 		msg.Status = "failed"
 		msg.ErrorMessage = err.Error()
+	} else if wamid != "" {
+		msg.WhatsAppMessageID = wamid
 	}
 
 	if dbErr := a.DB.Create(&msg).Error; dbErr != nil {
@@ -701,7 +703,8 @@ func (a *App) sendAndSaveInteractiveButtons(account *models.WhatsAppAccount, con
 
 // sendInteractiveButtons sends an interactive button or list message via WhatsApp Cloud API
 // If 3 or fewer buttons, sends as button message; if more than 3, sends as list message (max 10)
-func (a *App) sendInteractiveButtons(account *models.WhatsAppAccount, to, bodyText string, buttons []map[string]interface{}) error {
+// Returns the WhatsApp message ID and any error
+func (a *App) sendInteractiveButtons(account *models.WhatsAppAccount, to, bodyText string, buttons []map[string]interface{}) (string, error) {
 	// Convert buttons to whatsapp.Button format
 	waButtons := make([]whatsapp.Button, 0, len(buttons))
 	for i, btn := range buttons {
@@ -733,8 +736,7 @@ func (a *App) sendInteractiveButtons(account *models.WhatsAppAccount, to, bodyTe
 		AccessToken: account.AccessToken,
 	}
 	ctx := context.Background()
-	_, err := a.WhatsApp.SendInteractiveButtons(ctx, waAccount, to, bodyText, waButtons)
-	return err
+	return a.WhatsApp.SendInteractiveButtons(ctx, waAccount, to, bodyText, waButtons)
 }
 
 // getOrCreateContact finds or creates a contact for the phone number
