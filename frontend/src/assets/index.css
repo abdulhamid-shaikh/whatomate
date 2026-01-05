@@ -117,7 +117,9 @@
 }
 
 .chat-bubble-outgoing {
-  @apply rounded-tr-none ml-auto bg-gray-900 text-white;
+  @apply rounded-tr-none ml-auto;
+  background-color: #dcf8c6; /* WhatsApp light green */
+  color: #111b21; /* Dark text for readability */
 }
 
 .dark .chat-bubble-outgoing {
@@ -126,7 +128,7 @@
 }
 
 .chat-bubble-time {
-  @apply text-[11px] mt-0.5 leading-tight;
+  @apply text-[11px] mt-0.5 leading-tight flex items-center gap-1;
 }
 
 .chat-bubble-time span {
@@ -135,6 +137,19 @@
 
 .chat-bubble-time svg {
   @apply opacity-100;
+}
+
+/* Status icons in outgoing bubbles - more visible */
+.chat-bubble-outgoing .chat-bubble-time svg {
+  color: #53bdeb; /* WhatsApp blue for read */
+}
+
+.chat-bubble-outgoing .chat-bubble-time svg.text-muted-foreground {
+  color: rgba(17, 27, 33, 0.6); /* Darker gray for sent/delivered in light mode */
+}
+
+.dark .chat-bubble-outgoing .chat-bubble-time svg.text-muted-foreground {
+  color: hsl(var(--muted-foreground));
 }
 
 /* Reply preview inside chat bubble */

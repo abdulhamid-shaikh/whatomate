@@ -1239,7 +1239,7 @@ async function sendMediaMessage() {
                   <component
                     v-if="message.direction === 'outgoing'"
                     :is="getMessageStatusIcon(message.status)"
-                    :class="['h-3 w-3', getMessageStatusClass(message.status)]"
+                    :class="['h-4 w-4', getMessageStatusClass(message.status)]"
                   />
                 </div>
                 <!-- Reactions display -->
