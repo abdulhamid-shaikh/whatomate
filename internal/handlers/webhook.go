@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"strings"
-	"time"
 
 	"github.com/shridarpatil/whatomate/internal/models"
 	"github.com/shridarpatil/whatomate/internal/websocket"
@@ -281,86 +280,8 @@ func (a *App) processStatusUpdate(phoneNumberID string, status WebhookStatus) {
 
 	a.Log.Info("Processing status update", "message_id", messageID, "status", statusValue, "phone_number_id", phoneNumberID)
 
-	// Update regular messages table first
+	// Update messages table - this also handles campaign stats via incrementCampaignStat
 	a.updateMessageStatus(messageID, statusValue, status.Errors)
-
-	// Find the bulk message recipient by WhatsApp message ID
-	var recipient models.BulkMessageRecipient
-	result := a.DB.Where("whats_app_message_id = ?", messageID).First(&recipient)
-	if result.Error != nil {
-		// Not a bulk message, regular message was already updated above
-		a.Log.Debug("No bulk recipient found for message", "message_id", messageID)
-		return
-	}
-
-	now := time.Now()
-	updates := map[string]interface{}{}
-
-	switch statusValue {
-	case "sent":
-		// Message was sent to WhatsApp servers
-		updates["status"] = "sent"
-		updates["sent_at"] = now
-	case "delivered":
-		// Message was delivered to the recipient's device
-		updates["status"] = "delivered"
-		updates["delivered_at"] = now
-	case "read":
-		// Message was read by the recipient
-		updates["status"] = "read"
-		updates["read_at"] = now
-	case "failed":
-		// Message failed to send
-		updates["status"] = "failed"
-		if len(status.Errors) > 0 {
-			updates["error_message"] = status.Errors[0].Message
-		}
-	default:
-		a.Log.Debug("Ignoring status update", "status", statusValue)
-		return
-	}
-
-	// Update the recipient record
-	if err := a.DB.Model(&recipient).Updates(updates).Error; err != nil {
-		a.Log.Error("Failed to update recipient status", "error", err, "message_id", messageID)
-		return
-	}
-
-	// Update campaign counts
-	var campaign models.BulkMessageCampaign
-	if err := a.DB.First(&campaign, recipient.CampaignID).Error; err != nil {
-		a.Log.Error("Failed to find campaign", "error", err, "campaign_id", recipient.CampaignID)
-		return
-	}
-
-	// Recalculate counts from recipient statuses
-	var deliveredCount, readCount int64
-	a.DB.Model(&models.BulkMessageRecipient{}).Where("campaign_id = ? AND status = ?", campaign.ID, "delivered").Count(&deliveredCount)
-	a.DB.Model(&models.BulkMessageRecipient{}).Where("campaign_id = ? AND status = ?", campaign.ID, "read").Count(&readCount)
-
-	totalDelivered := deliveredCount + readCount // delivered includes read messages
-
-	// Update campaign with new counts
-	a.DB.Model(&campaign).Updates(map[string]interface{}{
-		"delivered_count": totalDelivered,
-		"read_count":      readCount,
-	})
-
-	a.Log.Info("Updated campaign stats", "campaign_id", campaign.ID, "delivered", totalDelivered, "read", readCount)
-
-	// Broadcast stats update via WebSocket
-	if a.WSHub != nil {
-		a.WSHub.BroadcastToOrg(campaign.OrganizationID, websocket.WSMessage{
-			Type: websocket.TypeCampaignStatsUpdate,
-			Payload: map[string]interface{}{
-				"campaign_id":     campaign.ID.String(),
-				"sent_count":      campaign.SentCount,
-				"delivered_count": totalDelivered,
-				"read_count":      readCount,
-				"failed_count":    campaign.FailedCount,
-			},
-		})
-	}
 }
 
 // updateMessageStatus updates the status of a regular message in the messages table

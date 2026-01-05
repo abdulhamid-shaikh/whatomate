@@ -725,7 +725,6 @@ func (a *App) processCampaign(campaignID uuid.UUID) {
 
 		// Send template message
 		waMessageID, err := a.sendTemplateMessage(&account, campaign.Template, &recipient)
-		now := time.Now()
 
 		// Create Message record with campaign_id in metadata
 		message := models.Message{
@@ -749,19 +748,10 @@ func (a *App) processCampaign(campaignID uuid.UUID) {
 			a.Log.Error("Failed to send message", "error", err, "recipient", recipient.PhoneNumber)
 			message.Status = "failed"
 			message.ErrorMessage = err.Error()
-			a.DB.Model(&recipient).Updates(map[string]interface{}{
-				"status":        "failed",
-				"error_message": err.Error(),
-			})
 			failedCount++
 		} else {
 			a.Log.Info("Message sent", "recipient", recipient.PhoneNumber, "message_id", waMessageID)
 			message.Status = "sent"
-			a.DB.Model(&recipient).Updates(map[string]interface{}{
-				"status":               "sent",
-				"whats_app_message_id": waMessageID,
-				"sent_at":              now,
-			})
 			sentCount++
 		}
 
