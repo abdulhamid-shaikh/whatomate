@@ -195,11 +195,110 @@ The visual flow builder allows you to:
 | **Input Validation** | Validate user responses with regex patterns |
 | **Variable Storage** | Store user inputs for later use in the conversation |
 | **Conditional Logic** | Branch based on user responses |
-| **API Integration** | Fetch data from external APIs during the flow |
+| **API Integration** | Fetch data from external APIs with response mapping |
+| **Template Engine** | Format messages with variables, conditionals, and loops |
 | **Webhook Headers** | Configure custom headers for API calls and completion webhooks |
 | **Agent Transfer** | Transfer to human agent when needed |
 | **WhatsApp Flows** | Integrate native WhatsApp Flows |
 | **Drag & Drop Ordering** | Reorder steps by dragging them to new positions |
+
+### API Integration
+
+The "Fetch from API" step type allows you to call external APIs and use the response data in your messages.
+
+#### Configuring an API Step
+
+<Steps>
+
+1. **Set API URL and Method**
+
+   Enter the API endpoint URL and select the HTTP method (GET, POST, PUT, PATCH).
+   Use `{{variable}}` syntax to include session data in the URL.
+
+2. **Add Headers (Optional)**
+
+   Configure custom headers like Authorization tokens or API keys.
+
+3. **Configure Request Body (POST/PUT/PATCH)**
+
+   Enter JSON body with variables: `{"phone": "{{phone_number}}", "name": "{{name}}"}`
+
+4. **Set Response Mapping**
+
+   Map API response fields to session variables for use in templates:
+   - `name` = `data.client.name`
+   - `positions` = `data.portfolio.items`
+   - `total_pnl` = `data.summary.pnl`
+
+5. **Write Message Template**
+
+   Use the template syntax to format the API response data.
+
+</Steps>
+
+### Template Syntax
+
+The template engine supports variables, conditionals, and loops for dynamic message formatting.
+
+#### Variables
+
+Access session data and API response fields:
+
+```
+{{name}}                    Simple variable
+{{user.profile.name}}       Nested path
+{{items[0].name}}           Array index access
+```
+
+#### Conditionals
+
+Show different content based on conditions:
+
+```
+{{if is_premium}}
+  Welcome, premium member!
+{{else}}
+  Upgrade to premium for more features.
+{{endif}}
+```
+
+Supported operators:
+- `{{if variable}}` - Truthy check (non-empty, non-zero)
+- `{{if amount > 100}}` - Greater than
+- `{{if amount < 100}}` - Less than
+- `{{if amount >= 100}}` - Greater than or equal
+- `{{if amount <= 100}}` - Less than or equal
+- `{{if status == 'active'}}` - String equality
+- `{{if status != 'inactive'}}` - String inequality
+
+#### Loops
+
+Iterate over arrays from API responses:
+
+```
+{{for item in items}}
+- {{item.name}}: {{item.quantity}} @ ₹{{item.price}}
+{{endfor}}
+```
+
+#### Example: Portfolio Message
+
+```
+Hi {{name}}, here are your positions:
+
+{{for pos in positions}}
+📊 {{pos.symbol}}: {{pos.qty}} @ ₹{{pos.avg_price}}
+{{if pos.is_loss}}  ⚠️ Loss: ₹{{pos.loss}}
+{{else}}  ✅ Profit: ₹{{pos.profit}}
+{{endif}}
+{{endfor}}
+
+Total P&L: {{if total_negative}}🔴{{else}}🟢{{endif}} ₹{{total_pnl}}
+```
+
+<Aside type="tip">
+  Variables set via response mapping are stored in the session and available in all subsequent steps, not just the current API fetch step.
+</Aside>
 
 ## Agent Transfers
 
