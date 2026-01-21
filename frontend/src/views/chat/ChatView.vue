@@ -936,6 +936,28 @@ function getInteractiveButtons(message: Message): Array<{ id: string; title: str
   }))
 }
 
+interface CTAUrlData {
+  type: 'cta_url'
+  body: string
+  button_text: string
+  url: string
+}
+
+function getCTAUrlData(message: Message): CTAUrlData | null {
+  if (message.message_type !== 'interactive' || !message.interactive_data) {
+    return null
+  }
+  if (message.interactive_data.type !== 'cta_url') {
+    return null
+  }
+  return {
+    type: 'cta_url',
+    body: message.interactive_data.body || '',
+    button_text: message.interactive_data.button_text || 'Open',
+    url: message.interactive_data.url || ''
+  }
+}
+
 function isMediaMessage(message: Message): boolean {
   return ['image', 'video', 'audio', 'document'].includes(message.message_type)
 }
@@ -1551,6 +1573,19 @@ async function sendMediaMessage() {
                     {{ btn.title }}
                   </div>
                 </div>
+                <!-- CTA URL button - WhatsApp style -->
+                <a
+                  v-if="getCTAUrlData(message)"
+                  :href="getCTAUrlData(message)?.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="interactive-buttons mt-2 -mx-2 -mb-1.5 border-t block"
+                >
+                  <div class="py-2 text-sm text-center font-medium cursor-pointer flex items-center justify-center gap-1.5">
+                    <ExternalLink class="h-3.5 w-3.5" />
+                    {{ getCTAUrlData(message)?.button_text }}
+                  </div>
+                </a>
                 <!-- Time for messages without text content -->
                 <span v-if="!getMessageContent(message) && !(isMediaMessage(message) && !message.media_url)" class="chat-bubble-time block clear-both">
                   <span>{{ formatMessageTime(message.created_at) }}</span>

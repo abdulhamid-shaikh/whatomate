@@ -580,15 +580,16 @@ func (a *App) SendMessage(r *fastglue.Request) error {
 
 	// Build response
 	response := MessageResponse{
-		ID:          message.ID,
-		ContactID:   message.ContactID,
-		Direction:   message.Direction,
-		MessageType: message.MessageType,
-		Content:     map[string]string{"body": message.Content},
-		Status:      message.Status,
-		IsReply:     message.IsReply,
-		CreatedAt:   message.CreatedAt,
-		UpdatedAt:   message.UpdatedAt,
+		ID:              message.ID,
+		ContactID:       message.ContactID,
+		Direction:       message.Direction,
+		MessageType:     message.MessageType,
+		Content:         map[string]string{"body": message.Content},
+		InteractiveData: message.InteractiveData,
+		Status:          message.Status,
+		IsReply:         message.IsReply,
+		CreatedAt:       message.CreatedAt,
+		UpdatedAt:       message.UpdatedAt,
 	}
 
 	// Add reply context to response
