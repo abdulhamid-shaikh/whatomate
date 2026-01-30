@@ -117,11 +117,13 @@ func (c *Client) doRequest(ctx context.Context, method, url string, body interfa
 
 // CredentialsValidationResult contains the result of credentials validation
 type CredentialsValidationResult struct {
-	PhoneNumber    string
-	VerifiedName   string
-	AccountMode    string
-	IsTestNumber   bool
-	QualityRating  string
+	PhoneNumber            string
+	VerifiedName           string
+	AccountMode            string
+	IsTestNumber           bool
+	QualityRating          string
+	CodeVerificationStatus string
+	Warning                string
 }
 
 // ValidateCredentials validates WhatsApp account credentials with Meta API
@@ -149,9 +151,13 @@ func (c *Client) ValidateCredentials(ctx context.Context, phoneID, businessID, a
 
 	// Check verification status (skip for sandbox/test numbers)
 	isTestNumber := phoneResult.AccountMode == "SANDBOX"
+	var warning string
 	if !isTestNumber {
-		if phoneResult.CodeVerificationStatus == "NOT_VERIFIED" || phoneResult.CodeVerificationStatus == "EXPIRED" {
-			return nil, fmt.Errorf("phone number is not verified (status: %s). Please register it at: https://business.facebook.com/wa/manage/phone-numbers/", phoneResult.CodeVerificationStatus)
+		if phoneResult.CodeVerificationStatus == "NOT_VERIFIED" {
+			return nil, fmt.Errorf("phone number is not verified. Please register it at: https://business.facebook.com/wa/manage/phone-numbers/")
+		}
+		if phoneResult.CodeVerificationStatus == "EXPIRED" {
+			warning = "Phone verification has expired. Consider re-verifying at: https://business.facebook.com/wa/manage/phone-numbers/"
 		}
 	}
 
@@ -189,11 +195,13 @@ func (c *Client) ValidateCredentials(ctx context.Context, phoneID, businessID, a
 	}
 
 	return &CredentialsValidationResult{
-		PhoneNumber:   phoneResult.DisplayPhoneNumber,
-		VerifiedName:  phoneResult.VerifiedName,
-		AccountMode:   phoneResult.AccountMode,
-		IsTestNumber:  isTestNumber,
-		QualityRating: phoneResult.QualityRating,
+		PhoneNumber:            phoneResult.DisplayPhoneNumber,
+		VerifiedName:           phoneResult.VerifiedName,
+		AccountMode:            phoneResult.AccountMode,
+		IsTestNumber:           isTestNumber,
+		QualityRating:          phoneResult.QualityRating,
+		CodeVerificationStatus: phoneResult.CodeVerificationStatus,
+		Warning:                warning,
 	}, nil
 }
 
