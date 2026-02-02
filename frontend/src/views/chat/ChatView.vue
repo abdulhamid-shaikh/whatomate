@@ -7,6 +7,9 @@ import { useUsersStore } from '@/stores/users'
 import { useTransfersStore } from '@/stores/transfers'
 import { wsService } from '@/services/websocket'
 import { contactsService, chatbotService, messagesService, customActionsService, type CustomAction, type ActionResult } from '@/services/api'
+import { useTagsStore } from '@/stores/tags'
+import { TagBadge } from '@/components/ui/tag-badge'
+import { getTagColorClass } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -78,7 +81,8 @@ import {
   Mail,
   Globe,
   Code,
-  RotateCw
+  RotateCw,
+  Filter
 } from 'lucide-vue-next'
 import { getInitials } from '@/lib/utils'
 import { useColorMode } from '@/composables/useColorMode'
@@ -115,6 +119,7 @@ const contactsStore = useContactsStore()
 const authStore = useAuthStore()
 const usersStore = useUsersStore()
 const transfersStore = useTransfersStore()
+const tagsStore = useTagsStore()
 const { isDark } = useColorMode()
 
 const messageInput = ref('')
@@ -155,6 +160,9 @@ const emojiPickerOpen = ref(false)
 // Custom actions state
 const customActions = ref<CustomAction[]>([])
 const executingActionId = ref<string | null>(null)
+
+// Tags filter state
+const isTagFilterOpen = ref(false)
 
 const contactId = computed(() => route.params.contactId as string | undefined)
 
@@ -217,6 +225,22 @@ async function fetchCustomActions() {
     // Silently fail - custom actions are optional
     console.error('Failed to fetch custom actions:', error)
   }
+}
+
+function toggleTagFilter(tagName: string) {
+  const index = contactsStore.selectedTags.indexOf(tagName)
+  if (index === -1) {
+    contactsStore.selectedTags.push(tagName)
+  } else {
+    contactsStore.selectedTags.splice(index, 1)
+  }
+  // Refetch contacts with new filter
+  contactsStore.fetchContacts()
+}
+
+function clearTagFilter() {
+  contactsStore.selectedTags = []
+  contactsStore.fetchContacts()
 }
 
 async function executeCustomAction(action: CustomAction) {
@@ -326,6 +350,11 @@ onMounted(async () => {
   // Fetch custom actions for admins/managers
   if (canAssignContacts.value) {
     fetchCustomActions()
+  }
+
+  // Fetch available tags for filtering (if not already loaded)
+  if (tagsStore.tags.length === 0) {
+    tagsStore.fetchTags().catch(() => {})
   }
 
   if (contactId.value) {
@@ -1182,13 +1211,80 @@ async function sendMediaMessage() {
     <div class="w-80 border-r border-white/[0.08] light:border-gray-200 flex flex-col bg-[#0a0a0b] light:bg-white">
       <!-- Search Header -->
       <div class="p-2 border-b border-white/[0.08] light:border-gray-200">
-        <div class="relative">
-          <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40 light:text-gray-400" />
-          <Input
-            v-model="contactsStore.searchQuery"
-            placeholder="Search contacts..."
-            class="pl-8 h-8 text-sm bg-white/[0.04] border-white/[0.1] text-white placeholder:text-white/40 light:bg-gray-50 light:border-gray-200 light:text-gray-900 light:placeholder:text-gray-400"
-          />
+        <div class="flex items-center gap-2">
+          <div class="relative flex-1">
+            <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40 light:text-gray-400" />
+            <Input
+              v-model="contactsStore.searchQuery"
+              placeholder="Search contacts..."
+              class="pl-8 h-8 text-sm bg-white/[0.04] border-white/[0.1] text-white placeholder:text-white/40 light:bg-gray-50 light:border-gray-200 light:text-gray-900 light:placeholder:text-gray-400"
+            />
+          </div>
+          <!-- Tag Filter -->
+          <Popover v-model:open="isTagFilterOpen">
+            <PopoverTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-8 w-8 shrink-0 relative"
+                :class="contactsStore.selectedTags.length > 0 ? 'text-emerald-400 bg-emerald-500/10' : 'text-white/40 hover:text-white hover:bg-white/[0.08] light:text-gray-500 light:hover:text-gray-900 light:hover:bg-gray-100'"
+              >
+                <Filter class="h-4 w-4" />
+                <span v-if="contactsStore.selectedTags.length > 0" class="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-emerald-500 text-[10px] text-white flex items-center justify-center">
+                  {{ contactsStore.selectedTags.length }}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" class="w-56 p-2">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between px-1">
+                  <span class="text-sm font-medium">Filter by tags</span>
+                  <Button
+                    v-if="contactsStore.selectedTags.length > 0"
+                    variant="ghost"
+                    size="sm"
+                    class="h-6 px-2 text-xs"
+                    @click="clearTagFilter"
+                  >
+                    Clear
+                  </Button>
+                </div>
+                <Separator />
+                <div v-if="tagsStore.tags.length === 0" class="py-2 text-center text-sm text-muted-foreground">
+                  No tags available
+                </div>
+                <div v-else class="space-y-1 max-h-48 overflow-y-auto">
+                  <button
+                    v-for="tag in tagsStore.tags"
+                    :key="tag.name"
+                    class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-white/[0.08] light:hover:bg-gray-100 transition-colors"
+                    :class="contactsStore.selectedTags.includes(tag.name) && 'bg-white/[0.08] light:bg-gray-100'"
+                    @click="toggleTagFilter(tag.name)"
+                  >
+                    <span :class="['w-2 h-2 rounded-full shrink-0', getTagColorClass(tag.color).split(' ')[0]]" />
+                    <span class="flex-1 text-left truncate">{{ tag.name }}</span>
+                    <Check
+                      v-if="contactsStore.selectedTags.includes(tag.name)"
+                      class="h-4 w-4 text-emerald-400 shrink-0"
+                    />
+                  </button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+        <!-- Active tag filters -->
+        <div v-if="contactsStore.selectedTags.length > 0" class="flex flex-wrap gap-1 mt-2">
+          <TagBadge
+            v-for="tagName in contactsStore.selectedTags"
+            :key="tagName"
+            :color="tagsStore.getTagByName(tagName)?.color"
+            class="cursor-pointer hover:opacity-80"
+            @click="toggleTagFilter(tagName)"
+          >
+            {{ tagName }}
+            <X class="h-3 w-3 ml-1" />
+          </TagBadge>
         </div>
       </div>
 
