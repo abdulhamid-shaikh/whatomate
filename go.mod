@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.10
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.99.0
 	github.com/dop251/goja v0.0.0-20260106131823-651366fbe6e3
+	github.com/expr-lang/expr v1.17.8
 	github.com/fasthttp/websocket v1.5.12
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
@@ -43,7 +44,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
-	github.com/expr-lang/expr v1.17.8 // indirect
 	github.com/fasthttp/router v1.4.5 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect

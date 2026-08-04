@@ -9,8 +9,8 @@ services:
     networks:
       - whatomate
     depends_on:
-      db:
-        condition: service_healthy
+      # db:
+      #   condition: service_healthy
       redis:
         condition: service_healthy
     env_file:
@@ -23,12 +23,12 @@ services:
   # PostgreSQL database
   db:
     image: postgres:17-alpine
-    container_name: whatomate_db
+    container_name: whatomate_db2
     restart: unless-stopped
     networks:
       - whatomate
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:5431:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-whatomate}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-whatomate}
